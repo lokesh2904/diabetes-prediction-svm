@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import joblib  # Import joblib for saving the model
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -31,7 +32,7 @@ svm = SVC()
 grid_search = GridSearchCV(svm, param_grid, cv=5, scoring='accuracy', n_jobs=-1)
 grid_search.fit(X_train, y_train)
 
-# Get best parameters and best model
+# Get best model and hyperparameters
 best_params = grid_search.best_params_
 best_model = grid_search.best_estimator_
 
@@ -39,7 +40,12 @@ best_model = grid_search.best_estimator_
 y_pred = best_model.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 
+# Save the trained model and scaler
+joblib.dump(best_model, "svm_model_diabetes.pkl")  # Save trained SVM model
+joblib.dump(scaler, "scaler.pkl")  # Save scaler
+
 # Print results
 print("Best Hyperparameters:", best_params)
 print("Test Accuracy after Hyperparameter Tuning:", accuracy)
 print("Classification Report:\n", classification_report(y_test, y_pred))
+print("Model and Scaler saved successfully!")
