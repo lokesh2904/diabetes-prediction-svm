@@ -1,50 +1,45 @@
-import numpy as np
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
+import numpy as np
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.metrics import accuracy_score, classification_report
 
-# Load the dataset
+# Load dataset
 data = pd.read_csv("diabetes.csv")
 
-# Display basic info and check for missing values
-print(data.info())
-print(data.isnull().sum())
-
 # Split features and target variable
-X = data.drop(columns=["Outcome"])
-y = data["Outcome"]
-
-# Split the dataset into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X = data.drop(columns=['Outcome'])
+y = data['Outcome']
 
 # Standardize the features
 scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+X_scaled = scaler.fit_transform(X)
 
-# Train an SVM model
-svm_model = SVC(kernel='linear', C=1.0, random_state=42)
-svm_model.fit(X_train, y_train)
+# Split dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
-# Make predictions
-y_pred = svm_model.predict(X_test)
+# Define hyperparameter grid for tuning
+param_grid = {
+    'C': [0.1, 1, 10, 100],  # Regularization parameter
+    'kernel': ['linear', 'rbf', 'poly'],  # Kernel type
+    'gamma': ['scale', 'auto', 0.01, 0.1, 1],  # Kernel coefficient
+}
 
-# Evaluate the model
+# Perform Grid Search with Cross-Validation
+svm = SVC()
+grid_search = GridSearchCV(svm, param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+grid_search.fit(X_train, y_train)
+
+# Get best parameters and best model
+best_params = grid_search.best_params_
+best_model = grid_search.best_estimator_
+
+# Evaluate the best model
+y_pred = best_model.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
-conf_matrix = confusion_matrix(y_test, y_pred)
-report = classification_report(y_test, y_pred)
 
-print(f"Model Accuracy: {accuracy * 100:.2f}%")
-print("Confusion Matrix:")
-print(conf_matrix)
-print("Classification Report:")
-print(report)
-
-# Save the trained model
-import joblib
-joblib.dump(svm_model, "svm_diabetes_model.pkl")
-joblib.dump(scaler, "scaler.pkl")
+# Print results
+print("Best Hyperparameters:", best_params)
+print("Test Accuracy after Hyperparameter Tuning:", accuracy)
+print("Classification Report:\n", classification_report(y_test, y_pred))
